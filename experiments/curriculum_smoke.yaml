@@ -1,0 +1,46 @@
+# Tiny run to verify curriculum stage switches (see console for [Curriculum] lines).
+train:
+  seed: 0
+  total_timesteps: 320
+  verbose: 1
+  tensorboard_log: ./ppo_tracking_tensorboard/
+  model_save_path: ppo_curriculum_smoke
+  ppo:
+    policy: MultiInputPolicy
+    learning_rate: 0.0003
+    n_steps: 64
+    batch_size: 32
+    gamma: 0.99
+
+env:
+  trajectory: circle
+  control_dt: 0.03
+  trajectory_kwargs:
+    radius: 0.15
+    speed: 0.5
+
+reward:
+  w_track: 1.0
+  w_smooth: 0.1
+
+robustness:
+  obs_noise_std: 0.0
+  action_noise_std: 0.0
+  action_delay: 0
+
+curriculum:
+  enabled: true
+  stages:
+    - start_timestep: 0
+      trajectory_speed: 0.3
+      obs_noise_std: 0.0
+      action_delay: 0
+    - start_timestep: 100
+      trajectory_speed: 0.9
+      obs_noise_std: 0.0
+      action_delay: 0
+    - start_timestep: 200
+      trajectory_speed: 1.2
+      obs_noise_std: 0.005
+      action_noise_std: 0.01
+      action_delay: 1

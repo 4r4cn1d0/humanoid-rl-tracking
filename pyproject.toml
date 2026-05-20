@@ -1,0 +1,24 @@
+[project]
+name = "humanoid-rl-tracking"
+version = "0.1.0"
+description = "Trajectory tracking with PPO on Gymnasium FetchReach (baseline for robust RL engineering)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "gymnasium>=0.29.0",
+  "gymnasium-robotics>=1.4.0",
+  "stable-baselines3>=2.3.0",
+  "numpy>=1.24.0",
+  "matplotlib>=3.7.0",
+  "PyYAML>=6.0",
+  "tensorboard>=2.14.0",
+  "imageio>=2.31.0",
+  "imageio-ffmpeg>=0.4.9",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.4.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

@@ -1,0 +1,34 @@
+# Quick smoke test: no curriculum, few timesteps.
+train:
+  seed: 0
+  total_timesteps: 2048
+  verbose: 1
+  tensorboard_log: ./ppo_tracking_tensorboard/
+  model_save_path: ppo_smoke_model
+  ppo:
+    policy: MultiInputPolicy
+    learning_rate: 0.0003
+    n_steps: 256
+    batch_size: 64
+    gamma: 0.99
+
+env:
+  trajectory: circle
+  control_dt: 0.03
+  trajectory_kwargs:
+    radius: 0.15
+    speed: 1.0
+
+reward:
+  w_track: 1.0
+  w_smooth: 0.1
+  w_velocity: 0.0
+  use_squared_error: false
+
+robustness:
+  obs_noise_std: 0.0
+  action_noise_std: 0.0
+  action_delay: 0
+
+curriculum:
+  enabled: false

@@ -1,0 +1,7 @@
+# Default reward shaping for TrajectoryTrackingEnv (used by experiments/default.yaml)
+w_track: 1.0
+w_smooth: 0.1
+w_velocity: 0.0
+# When env.track_orientation is true: penalize geodesic EE orientation error (rad)
+w_orient: 0.22
+use_squared_error: false

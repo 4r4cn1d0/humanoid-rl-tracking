@@ -1,0 +1,10 @@
+# Core RL stack (pin loosely for reproducibility; tighten as needed)
+gymnasium>=0.29.0
+gymnasium-robotics>=1.4.0
+stable-baselines3>=2.3.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+PyYAML>=6.0
+tensorboard>=2.14.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9

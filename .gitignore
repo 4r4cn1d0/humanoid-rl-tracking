@@ -1,0 +1,27 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Artifacts (except final evaluation)
+outputs/*
+!outputs/final_eval/
+outputs/final_eval/*
+!outputs/final_eval/*.png
+!outputs/final_eval/*.npz
+!outputs/final_eval/metrics.json
+runs/
+*.zip
+ppo_tracking_tensorboard/
+*.mp4
+*.npz
+!outputs/final_eval/*.npz
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
