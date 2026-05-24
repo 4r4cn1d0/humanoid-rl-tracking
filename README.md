@@ -21,6 +21,63 @@ A reinforcement learning system that trains a Franka Panda arm (via FetchReachDe
 
 ---
 
+## Design Note
+
+### State (Observation Space — 28D)
+
+The policy receives a flat dictionary of 8 keys:
+
+| Key | Shape | Description |
+|---|---|---|
+| `achieved_goal` | (3,) | Current end-effector position $x_\text{ee} \in \mathbb{R}^3$ |
+| `desired_goal` | (3,) | Current target position $x_d(t) \in \mathbb{R}^3$ |
+| `observation` | (10,) | FetchReach internal state: joint positions and velocities $[q, \dot{q}]$ |
+| `tracking_error` | (3,) | Signed error $e(t) = x_d(t) - x_\text{ee}$ |
+| `tracking_error_vel` | (3,) | Error derivative $\dot{e}(t) = (e(t) - e(t-1))/\Delta t$ |
+| `target_vel` | (3,) | Trajectory velocity $\dot{x}_d(t)$ via finite difference |
+| `phase_encoding` | (2,) | $[\sin(\omega t),\, \cos(\omega t)]$ — continuous cycle phase |
+| `prev_action` | (4,) | Last applied action $a_{t-1}$ |
+
+`target_vel` and `phase_encoding` are the critical additions. Without them the policy can only react to the current error; with them it can anticipate where the target is going and reduce phase lag.
+
+### Action Space
+
+The action is a 4D vector of mocap position deltas $a_t \in [-1, 1]^4$ (3D position + gripper, gripper unused). This is FetchReach's native action space — the simulator integrates the delta into the mocap body position each step.
+
+### Reward
+
+$$r_t = -w_\text{track} \|e_t\|^2 \;-\; w_\text{smooth} \|\Delta a_t\|^2 \;-\; w_\text{vel} \|\dot{q}_t\|$$
+
+with $w_\text{track}=1.0$, $w_\text{smooth}=0.0025$, $w_\text{vel}=0.2$.
+
+The squared tracking term gives dense gradients near the target. The smoothness penalty discourages jittery high-frequency control. The joint velocity penalty keeps motion fluid.
+
+### Trajectory Representation
+
+Three trajectory types are implemented, all parametrised by time $t$:
+
+**Circle** — constant curvature, periodic:
+$$x_d(t) = \bigl[c_x + r\cos(\omega t),\; c_y + r\sin(\omega t),\; c_z\bigr]^\top$$
+
+**Figure-8** — Lissajous curve, self-intersecting:
+$$x_d(t) = \bigl[c_x + r\sin(\omega t),\; c_y + \tfrac{r}{2}\sin(2\omega t),\; c_z\bigr]^\top$$
+
+**Spline** — cubic spline through $N$ random waypoints, reparametrised to constant arc-length speed $v$.
+
+The policy receives the trajectory only implicitly through `desired_goal`, `target_vel`, and `phase_encoding` — it never sees the trajectory type or parameters directly.
+
+### Evaluating Tracking Performance
+
+Three metrics are reported per condition:
+
+- **RMSE** $= \sqrt{\frac{1}{T}\sum_t \|e_t\|^2}$ — overall tracking accuracy
+- **Mean error** $= \frac{1}{T}\sum_t \|e_t\|$ — average distance to target
+- **Step-level success @3cm** $= \frac{1}{T}\sum_t \mathbf{1}[\|e_t\| < 0.03]$ — fraction of timesteps within the training success threshold
+
+Six conditions are evaluated: clean circle, clean figure-8, clean spline, circle with observation noise ($\sigma=0.01$), circle with action noise ($\sigma=0.02$), and circle with 1-step action delay. This tests both in-distribution performance and robustness to the uncertainty sources trained on.
+
+---
+
 ## Evaluation Plots
 
 ### Summary: Tracking Error by Condition
