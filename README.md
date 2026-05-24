@@ -104,16 +104,23 @@ RMSE: **1.45 cm** | Mean error: **0.99 cm** | Steps <3cm: **98.5%**
 
 ## Demo Videos
 
-| Condition | GIF |
-|---|---|
-| Circle (clean) | <img src="outputs/best_model_eval/gifs/circle_clean.gif" width="240"/> |
-| Figure-8 (clean) | <img src="outputs/best_model_eval/gifs/figure8_clean.gif" width="240"/> |
-| Spline (clean) | <img src="outputs/best_model_eval/gifs/spline_clean.gif" width="240"/> |
-| Circle + obs noise | <img src="outputs/best_model_eval/gifs/circle_obs_noise.gif" width="240"/> |
-| Circle + action noise | <img src="outputs/best_model_eval/gifs/circle_action_noise.gif" width="240"/> |
-| Circle + 1-step delay | <img src="outputs/best_model_eval/gifs/circle_delay_1.gif" width="240"/> |
+The GIFs below are compressed previews. Full-resolution MP4 videos (30fps, MuJoCo renderer) are in `outputs/best_model_eval/videos/` — open them locally for the best quality.
 
-Full MP4s in `outputs/best_model_eval/videos/`.
+| Condition | GIF preview | Full video |
+|---|---|---|
+| Circle (clean) | <img src="outputs/best_model_eval/gifs/circle_clean.gif" width="240"/> | `outputs/best_model_eval/videos/circle_clean.mp4` |
+| Figure-8 (clean) | <img src="outputs/best_model_eval/gifs/figure8_clean.gif" width="240"/> | `outputs/best_model_eval/videos/figure8_clean.mp4` |
+| Spline (clean) | <img src="outputs/best_model_eval/gifs/spline_clean.gif" width="240"/> | `outputs/best_model_eval/videos/spline_clean.mp4` |
+| Circle + obs noise | <img src="outputs/best_model_eval/gifs/circle_obs_noise.gif" width="240"/> | `outputs/best_model_eval/videos/circle_obs_noise.mp4` |
+| Circle + action noise | <img src="outputs/best_model_eval/gifs/circle_action_noise.gif" width="240"/> | `outputs/best_model_eval/videos/circle_action_noise.mp4` |
+| Circle + 1-step delay | <img src="outputs/best_model_eval/gifs/circle_delay_1.gif" width="240"/> | `outputs/best_model_eval/videos/circle_delay_1.mp4` |
+
+> MP4s are not tracked by git (excluded via `.gitignore`). After cloning, regenerate them with:
+> ```bash
+> python scripts/eval_suite.py --model best_model.zip --pure-sac --no-track-orientation \
+>   --control-dt 0.05 --max-episode-steps 200 --max-steps 200 --episodes 20 \
+>   --output-root outputs/best_model_eval --record-videos
+> ```
 
 ---
 
