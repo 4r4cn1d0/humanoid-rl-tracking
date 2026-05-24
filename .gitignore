@@ -1,5 +1,9 @@
+# Virtual environments
 venv/
+venv_py311/
 .venv/
+
+# Python cache
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -7,21 +11,29 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Artifacts (except final evaluation)
-outputs/*
-!outputs/final_eval/
-outputs/final_eval/*
-!outputs/final_eval/*.png
-!outputs/final_eval/*.npz
-!outputs/final_eval/metrics.json
-runs/
+# Large binary artifacts — exclude by default
 *.zip
-ppo_tracking_tensorboard/
-*.mp4
 *.npz
-!outputs/final_eval/*.npz
+*.mp4
+
+# Checkpoints — too large for git
+checkpoints/
+
+# Tensorboard logs
+tensorboard/
 
 # OS / editor
 .DS_Store
 .idea/
 .vscode/
+
+# Keep all outputs EXCEPT raw timeseries npz (too large)
+outputs/**/*.npz
+
+# Keep everything else in outputs (plots, gifs, json, md, csv)
+!outputs/
+!outputs/**/*.png
+!outputs/**/*.gif
+!outputs/**/*.json
+!outputs/**/*.md
+!outputs/**/*.csv

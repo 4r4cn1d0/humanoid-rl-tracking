@@ -22,9 +22,20 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
+from stable_baselines3.common.vec_env import VecNormalize
 
 from envs.tracking_env import TrajectoryTrackingEnv
+from envs.pure_sac_env import PureSACEnv
+
+
+def _parse_json_dict(raw: str) -> dict:
+    if not raw:
+        return {}
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("--trajectory-kwargs must decode to a JSON object")
+    return data
 
 
 def _try_import_imageio():
@@ -38,15 +49,37 @@ def _try_import_imageio():
 
 def build_tracking_env(args: argparse.Namespace, *, render_mode: str | None) -> TrajectoryTrackingEnv:
     max_eps = getattr(args, "max_episode_steps", None)
+    traj_kwargs = dict(getattr(args, "trajectory_kwargs_dict", {}) or {})
+    traj_seed = int(getattr(args, "trajectory_seed", -1))
+    if traj_seed >= 0:
+        traj_kwargs["seed"] = traj_seed
+    use_pure_sac = getattr(args, "pure_sac", False)
+    if use_pure_sac:
+        return PureSACEnv(
+            render_mode=render_mode,
+            trajectory=args.trajectory,
+            trajectory_kwargs=traj_kwargs,
+            control_dt=args.control_dt,
+            max_episode_steps=int(max_eps) if max_eps is not None else None,
+            w_track=args.w_track,
+            w_smooth=args.w_smooth,
+            w_velocity=args.w_velocity,
+            obs_noise_std=args.obs_noise_std,
+            action_noise_std=args.action_noise_std,
+            action_delay=args.action_delay,
+            rng=np.random.default_rng(args.seed),
+        )
     return TrajectoryTrackingEnv(
         render_mode=render_mode,
         trajectory=args.trajectory,
+        trajectory_kwargs=traj_kwargs,
         control_dt=args.control_dt,
         max_episode_steps=int(max_eps) if max_eps is not None else None,
         w_track=args.w_track,
         w_smooth=args.w_smooth,
         w_velocity=args.w_velocity,
         w_orient=args.w_orient,
+        w_align=getattr(args, "w_align", 0.0),
         track_orientation=bool(args.track_orientation),
         use_squared_error=args.squared_error,
         obs_noise_std=args.obs_noise_std,
@@ -147,6 +180,8 @@ def episode_metrics(series: dict[str, np.ndarray]) -> dict[str, float]:
         "rmse": rmse,
         "mean_error": float(np.mean(err)),
         "max_error": float(np.max(err)),
+        "p95_error": float(np.percentile(err, 95)),
+        "pct_steps_under_5cm": float(np.mean(err < 0.05) * 100.0),
         "mean_abs_delta_action": mean_da,
         "mean_qvel_norm": float(np.mean(qv)) if qv.size else 0.0,
         "max_qvel_norm": float(np.max(qv)) if qv.size else 0.0,
@@ -255,6 +290,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--save-dir", type=str, default="outputs/eval")
     p.add_argument("--trajectory", type=str, default="circle")
     p.add_argument(
+        "--trajectory-kwargs",
+        type=str,
+        default="{}",
+        help='JSON object passed to the trajectory constructor, e.g. \'{"speed": 0.8}\'',
+    )
+    p.add_argument("--trajectory-seed", type=int, default=-1, help="Seed for random trajectories")
+    p.add_argument(
         "--stochastic",
         action="store_true",
         help="Sample actions from the policy instead of deterministic mean",
@@ -267,18 +309,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max-episode-steps", type=int, default=0, help="0 = gym default (50); use 400 for long segments")
     p.add_argument("--track-orientation", action="store_true", help="Must match training if policy used orientation")
     p.add_argument("--w-orient", type=float, default=0.22)
-    p.add_argument("--obs-noise-std", type=float, default=0.0)
+    p.add_argument("--w-align", type=float, default=0.0)
+    p.add_argument("--obs-noise-std", type=float, default=0.001)
     p.add_argument("--action-noise-std", type=float, default=0.0)
     p.add_argument("--action-delay", type=int, default=0)
     p.add_argument("--w-track", type=float, default=1.0)
     p.add_argument("--w-smooth", type=float, default=0.1)
     p.add_argument("--w-velocity", type=float, default=0.0)
     p.add_argument("--squared-error", action="store_true")
+    p.add_argument("--pure-sac", action="store_true", help="Use PureSACEnv + SAC loader (for pure_sac_model.zip)")
     return p.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    args.trajectory_kwargs_dict = _parse_json_dict(args.trajectory_kwargs)
     deterministic = not bool(args.stochastic)
     save_dir = Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -293,7 +338,17 @@ def main() -> None:
     if not model_path.is_file():
         raise FileNotFoundError(f"Model not found: {model_path}")
 
-    model = PPO.load(str(model_path), env=env)
+    # Load VecNormalize stats if available
+    vec_normalize_path = Path(str(model_path).replace(".zip", "_vecnormalize.pkl"))
+    if vec_normalize_path.exists():
+        env = VecNormalize.load(str(vec_normalize_path), env)
+        print(f"Loaded VecNormalize stats from {vec_normalize_path}")
+
+    use_pure_sac = getattr(args, "pure_sac", False)
+    if use_pure_sac:
+        model = SAC.load(str(model_path), env=env)
+    else:
+        model = PPO.load(str(model_path), env=env)
 
     all_metrics: list[dict[str, float]] = []
     for ep in range(args.episodes):
@@ -334,7 +389,10 @@ def main() -> None:
 
     if args.record_mp4:
         vid_env = build_tracking_env(args, render_mode="rgb_array")
-        model_vid = PPO.load(str(model_path), env=vid_env)
+        if use_pure_sac:
+            model_vid = SAC.load(str(model_path), env=vid_env)
+        else:
+            model_vid = PPO.load(str(model_path), env=vid_env)
         vid_env.reset(seed=args.seed)
         out_mp4 = Path(args.record_mp4)
         record_video(

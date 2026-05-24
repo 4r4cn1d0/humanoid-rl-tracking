@@ -1,0 +1,141 @@
+# SAC training experiment with residual operational-space controller
+train:
+  seed: 0
+  total_timesteps: 800000  # Extended for smoother 7-stage curriculum
+  verbose: 1
+  tensorboard_log: ./sac_residual_tensorboard/
+  model_save_path: sac_residual_model
+  n_envs: 1
+  device: mps  # Use MPS for M4 MacBook Air
+
+  sac:
+    policy: MultiInputPolicy
+    learning_rate: 0.0003
+    buffer_size: 1000000
+    batch_size: 256
+    gamma: 0.99
+    tau: 0.005
+    gradient_steps: 1
+    train_freq: 1
+    ent_coef: auto
+    # Higher target entropy to maintain exploration across curriculum stages
+    target_entropy: -2.0
+
+env:
+  # Circle trajectory tracking with FetchReachDense-v4
+  # v4 has correct robot positioning: gripper starts at [1.3418, 0.7491, 0.5347]
+  trajectory: circle
+  control_dt: 0.03
+  max_episode_steps: 200  # 8 seconds at 25Hz
+  trajectory_kwargs:
+    # Center trajectory at gripper start position
+    center: [1.34, 0.75, 0.53]
+    radius: 0.08
+    speed: 0.6
+
+reward:
+  w_track: 1.0
+  w_smooth: 0.01
+  w_velocity: 0.0
+  w_align: 0.0
+  use_squared_error: false
+
+robustness:
+  obs_noise_std: 0.0
+  action_noise_std: 0.0
+  action_delay: 0
+
+# Residual RL specific parameters
+residual:
+  # PD controller gains — tuned so PD alone achieves ~9cm mean error on the circle.
+  # action_scale=5 gives softer mapping: u_pd = (Kp*e + Kd*de) / 5
+  pd_kp: 40.0
+  pd_kd: 10.0
+
+  # Residual scaling (α) — RL has meaningful authority on top of PD baseline
+  residual_alpha: 0.5
+  anneal_alpha: false
+
+  # Action repeat (1 = no repeat, policy runs at sim frequency)
+  action_repeat: 1
+
+  # Velocity command parameters
+  velocity_max: 0.5
+
+  # Enhanced reward parameters (unused with simplified reward, kept for reference)
+  track_exp_k: 10.0
+  vel_match_k: 5.0
+  jerk_penalty_weight: 0.01
+
+  # Future waypoints — disabled until basic tracking works
+  future_horizon: 0
+
+# Curriculum for SAC training
+# IMPORTANT: Transitions are now PERFORMANCE-GATED, not timestep-gated.
+# See train/callbacks.py for PerformanceGatedCurriculumCallback.
+# Progression: Circle (multiple speeds + noise) → Spline → Figure-8
+curriculum:
+  enabled: true
+  stages:
+    - name: circle_very_slow_clean
+      trajectory: circle
+      trajectory_speed: 0.6
+      obs_noise_std: 0.002
+      action_noise_std: 0.005
+      action_delay: 0
+      # PD alone hits ~2cm mean error. Gates require consistent <2.5cm to advance.
+      advance_if:
+        success_rate_gt: 0.75   # >75% steps within 3cm
+        mean_tracking_error_lt: 0.025  # mean error < 2.5cm
+    - name: circle_slow_light_noise
+      trajectory: circle
+      trajectory_speed: 0.75
+      obs_noise_std: 0.003
+      action_noise_std: 0.008
+      action_delay: 0
+      advance_if:
+        success_rate_gt: 0.70
+        mean_tracking_error_lt: 0.028
+    - name: circle_medium_noise
+      trajectory: circle
+      trajectory_speed: 0.9
+      obs_noise_std: 0.005
+      action_noise_std: 0.01
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.65
+        mean_tracking_error_lt: 0.030
+    - name: circle_nominal_robust
+      trajectory: circle
+      trajectory_speed: 1.0
+      obs_noise_std: 0.008
+      action_noise_std: 0.015
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.60
+        mean_tracking_error_lt: 0.032
+    - name: spline_slow
+      trajectory: spline
+      trajectory_speed: 0.8
+      obs_noise_std: 0.005
+      action_noise_std: 0.01
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.55
+        mean_tracking_error_lt: 0.035
+    - name: spline_nominal
+      trajectory: spline
+      trajectory_speed: 1.0
+      obs_noise_std: 0.008
+      action_noise_std: 0.015
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.50
+        mean_tracking_error_lt: 0.038
+    - name: figure8_final
+      trajectory: figure8
+      trajectory_speed: 1.0
+      obs_noise_std: 0.01
+      action_noise_std: 0.02
+      action_delay: 2
+      # Final stage — no advancement criteria

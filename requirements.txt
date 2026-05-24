@@ -1,10 +1,25 @@
-# Core RL stack (pin loosely for reproducibility; tighten as needed)
-gymnasium>=0.29.0
-gymnasium-robotics>=1.4.0
-stable-baselines3>=2.3.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-PyYAML>=6.0
-tensorboard>=2.14.0
-imageio>=2.31.0
-imageio-ffmpeg>=0.4.9
+# Core dependencies for 3D End-Effector Tracking Challenge
+# Python 3.11+ required
+
+# Reinforcement Learning
+stable-baselines3==2.3.2
+gymnasium==0.29.1
+
+# Robotics simulation (install from source)
+# pip install git+https://github.com/Farama-Foundation/Gymnasium-Robotics.git@v1.4.2
+
+# Visualization and plotting
+matplotlib==3.8.4
+imageio==2.34.1
+imageio-ffmpeg==0.4.9
+
+# Scientific computing
+numpy==1.26.4
+scipy==1.13.0
+
+# Monitoring
+tensorboard==2.16.2
+
+# Utilities
+pyyaml==6.0.1
+tqdm==4.66.4

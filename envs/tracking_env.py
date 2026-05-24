@@ -54,6 +54,7 @@ class TrajectoryTrackingEnv(gym.Env):
         w_smooth: float = 0.1,
         w_velocity: float = 0.0,
         w_orient: float = 0.0,
+        w_align: float = 0.0,
         track_orientation: bool = False,
         use_squared_error: bool = False,
         obs_noise_std: float = 0.0,
@@ -87,6 +88,7 @@ class TrajectoryTrackingEnv(gym.Env):
         self.w_smooth = float(w_smooth)
         self.w_velocity = float(w_velocity)
         self.w_orient = float(w_orient)
+        self.w_align = float(w_align)
         self.track_orientation = bool(track_orientation)
         self.use_squared_error = bool(use_squared_error)
 
@@ -109,6 +111,8 @@ class TrajectoryTrackingEnv(gym.Env):
         self.previous_action = np.zeros(self.env.action_space.shape, dtype=np.float64)
         self._action_history: deque[np.ndarray] = deque()
         self._init_action_buffer()
+        self._prev_tracking_error = np.zeros(3, dtype=np.float64)
+        self._prev_achieved_goal = np.zeros(3, dtype=np.float64)
 
         self._target_quat_current = normalize_quat(_DEFAULT_FETCH_QUAT.copy())
         self._inner_unwrapped: Any = self.env.unwrapped
@@ -128,6 +132,15 @@ class TrajectoryTrackingEnv(gym.Env):
             self.observation_space = spaces.Dict(orig_spaces)
         else:
             self.observation_space = self.env.observation_space
+
+        # Add tracking error and previous action to observation space
+        orig_spaces = dict(self.observation_space.spaces)
+        orig_spaces["tracking_error"] = spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float64)
+        orig_spaces["tracking_error_vel"] = spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float64)
+        orig_spaces["prev_action"] = spaces.Box(
+            self.env.action_space.low, self.env.action_space.high, dtype=np.float32
+        )
+        self.observation_space = spaces.Dict(orig_spaces)
 
         self.observation_space = _observation_space_float32(self.observation_space)
         self.action_space = self.env.action_space
@@ -192,6 +205,8 @@ class TrajectoryTrackingEnv(gym.Env):
         self.t = 0.0
         self.previous_action = np.zeros(self.action_space.shape, dtype=np.float64)
         self._init_action_buffer()
+        self._prev_tracking_error = np.zeros(3, dtype=np.float64)
+        self._prev_achieved_goal = np.zeros(3, dtype=np.float64)
 
         target = self.trajectory.position(self.t)
         self.env.unwrapped.goal = target
@@ -200,6 +215,7 @@ class TrajectoryTrackingEnv(gym.Env):
                 np.asarray(self.trajectory.orientation(self.t), dtype=np.float64).reshape(4)
             )
         obs = self._augment_obs_dict(obs, target)
+        self._prev_achieved_goal = obs["achieved_goal"].copy()
 
         return _obs_to_float32(self._maybe_noise_obs(obs)), info
 
@@ -207,6 +223,19 @@ class TrajectoryTrackingEnv(gym.Env):
         """Align desired_goal with moving target; optionally add orientation goals."""
         out = {k: (np.array(v, copy=True) if hasattr(v, "copy") else v) for k, v in obs.items()}
         out["desired_goal"] = np.array(target, dtype=np.float64, copy=True)
+        
+        # Add explicit tracking error
+        achieved_goal = out["achieved_goal"]
+        tracking_error = target - achieved_goal
+        out["tracking_error"] = tracking_error.copy()
+        
+        # Add tracking error velocity (derivative)
+        tracking_error_vel = (tracking_error - self._prev_tracking_error) / self.control_dt
+        out["tracking_error_vel"] = tracking_error_vel.copy()
+        
+        # Add previous action
+        out["prev_action"] = self.previous_action.copy()
+        
         if self.track_orientation:
             q_des = normalize_quat(
                 np.asarray(self.trajectory.orientation(self.t), dtype=np.float64).reshape(4)
@@ -260,15 +289,17 @@ class TrajectoryTrackingEnv(gym.Env):
         achieved_goal = obs["achieved_goal"]
         err_vec = achieved_goal - target_position
         dist = float(np.linalg.norm(err_vec))
+        
+        # Update previous tracking error for next step
+        self._prev_tracking_error = target_position - achieved_goal
 
-        if self.use_squared_error:
-            tracking_term = self.w_track * (dist**2)
-        else:
-            tracking_term = self.w_track * dist
+        # Use squared error for tracking reward
+        tracking_term = self.w_track * (dist**2)
         tracking_reward = -tracking_term
 
+        # Use squared smoothness penalty
         smoothness_penalty = -self.w_smooth * float(
-            np.linalg.norm(a_cmd - self.previous_action)
+            np.linalg.norm(a_cmd - self.previous_action)**2
         )
 
         vel_penalty = 0.0
@@ -290,9 +321,27 @@ class TrajectoryTrackingEnv(gym.Env):
             orient_err = quat_geodesic_distance(q_des, q_ach)
             orient_penalty = -self.w_orient * float(orient_err)
 
-        reward = tracking_reward + smoothness_penalty + vel_penalty + orient_penalty
+        # Tangent alignment reward
+        align_reward = 0.0
+        if self.w_align > 0.0:
+            # Compute trajectory tangent
+            target_next = self.trajectory.position(self.t + self.control_dt)
+            tangent = target_next - target_position
+            tangent_norm = np.linalg.norm(tangent)
+            
+            # Compute end-effector velocity
+            ee_velocity = (achieved_goal - self._prev_achieved_goal) / self.control_dt
+            ee_vel_norm = np.linalg.norm(ee_velocity)
+            
+            if tangent_norm > 1e-6 and ee_vel_norm > 1e-6:
+                # Cosine similarity between tangent and EE velocity
+                alignment = np.dot(tangent, ee_velocity) / (tangent_norm * ee_vel_norm)
+                align_reward = self.w_align * alignment
+        
+        reward = tracking_reward + smoothness_penalty + vel_penalty + orient_penalty + align_reward
 
         self.previous_action = a_cmd.copy()
+        self._prev_achieved_goal = achieved_goal.copy()
         self.t += self.control_dt
 
         info = dict(info)

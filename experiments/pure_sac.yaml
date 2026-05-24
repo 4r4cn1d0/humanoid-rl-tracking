@@ -1,0 +1,147 @@
+# Pure SAC trajectory tracking — no PD controller
+# Option B: Circle mastery + Spline generalization
+# Policy directly outputs mocap position deltas; learns everything from scratch.
+
+train:
+  seed: 0
+  total_timesteps: 1_000_000
+  verbose: 1
+  tensorboard_log: ./tensorboard/
+  checkpoint_dir: ./checkpoints/
+  model_save_path: pure_sac_model
+  n_envs: 1
+  device: mps
+
+  sac:
+    policy: MultiInputPolicy
+    learning_rate: 0.0003
+    buffer_size: 500_000
+    batch_size: 256
+    gamma: 0.99
+    tau: 0.005
+    gradient_steps: 2
+    train_freq: 1
+    ent_coef: auto
+    target_entropy: -2.0
+
+env:
+  trajectory: circle
+  control_dt: 0.05
+  max_episode_steps: 200
+  trajectory_kwargs:
+    center: [1.34, 0.75, 0.53]
+    radius: 0.15
+    speed: 0.6
+
+reward:
+  w_track: 1.0
+  w_smooth: 0.0025    # Low — prevents policy collapsing to zero-output
+  w_velocity: 0.2
+
+success_threshold: 0.03   # 3cm
+
+# 9 stages: 6 circle + 3 spline
+# Gates monotonically relax as difficulty increases.
+# Hysteresis: sustain_episodes must pass consecutively before advancing.
+# No action noise/delay until Stage 3 (circle_medium_fast).
+curriculum:
+  enabled: true
+  stages:
+
+    # ── Circle: 6 fine speed steps ──────────────────────────────────────────
+    - name: circle_slow
+      trajectory: circle
+      trajectory_speed: 0.6
+      obs_noise_std: 0.001
+      action_noise_std: 0.000
+      action_delay: 0
+      advance_if:
+        success_rate_gt: 0.43
+        mean_tracking_error_lt: 0.036
+        sustain_episodes: 10
+
+    - name: circle_medium_slow
+      trajectory: circle
+      trajectory_speed: 0.75
+      obs_noise_std: 0.001
+      action_noise_std: 0.000
+      action_delay: 0
+      advance_if:
+        success_rate_gt: 0.40
+        mean_tracking_error_lt: 0.038
+        sustain_episodes: 10
+
+    - name: circle_medium
+      trajectory: circle
+      trajectory_speed: 0.9
+      obs_noise_std: 0.002
+      action_noise_std: 0.000
+      action_delay: 0
+      advance_if:
+        success_rate_gt: 0.37
+        mean_tracking_error_lt: 0.040
+        sustain_episodes: 10
+
+    - name: circle_medium_fast
+      trajectory: circle
+      trajectory_speed: 1.1
+      obs_noise_std: 0.003
+      action_noise_std: 0.004   # noise + delay introduced here
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.34
+        mean_tracking_error_lt: 0.043
+        sustain_episodes: 10
+
+    - name: circle_fast
+      trajectory: circle
+      trajectory_speed: 1.3
+      obs_noise_std: 0.005
+      action_noise_std: 0.007
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.31
+        mean_tracking_error_lt: 0.046
+        sustain_episodes: 10
+
+    - name: circle_very_fast
+      trajectory: circle
+      trajectory_speed: 1.5
+      obs_noise_std: 0.008
+      action_noise_std: 0.010
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.28
+        mean_tracking_error_lt: 0.050
+        sustain_episodes: 10
+
+    # ── Spline: 3 speeds ─────────────────────────────────────────────────────
+    - name: spline_slow
+      trajectory: spline
+      trajectory_speed: 0.6
+      obs_noise_std: 0.003
+      action_noise_std: 0.005
+      action_delay: 0
+      advance_if:
+        success_rate_gt: 0.25
+        mean_tracking_error_lt: 0.055
+        sustain_episodes: 10
+
+    - name: spline_medium
+      trajectory: spline
+      trajectory_speed: 0.9
+      obs_noise_std: 0.005
+      action_noise_std: 0.008
+      action_delay: 1
+      advance_if:
+        success_rate_gt: 0.20
+        mean_tracking_error_lt: 0.060
+        sustain_episodes: 10
+
+    - name: spline_fast
+      trajectory: spline
+      trajectory_speed: 1.2
+      obs_noise_std: 0.008
+      action_noise_std: 0.010
+      action_delay: 1
+      # Final stage — no advancement

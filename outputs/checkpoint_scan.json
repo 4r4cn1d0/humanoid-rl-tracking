@@ -1,0 +1,202 @@
+[
+  {
+    "steps": 100000,
+    "mean_tracking_error_cm": 1.2026297396872863,
+    "rmse_cm": 1.6039266392533016,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.202629739687286
+  },
+  {
+    "steps": 125000,
+    "mean_tracking_error_cm": 0.8940184062651494,
+    "rmse_cm": 1.40655849957542,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.8940184062651491
+  },
+  {
+    "steps": 150000,
+    "mean_tracking_error_cm": 1.0447148753091031,
+    "rmse_cm": 1.4860325127923018,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.044714875309103
+  },
+  {
+    "steps": 175000,
+    "mean_tracking_error_cm": 0.7412787482325349,
+    "rmse_cm": 1.30051875279537,
+    "step_success_3cm_pct": 98.45,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.7412787482325348
+  },
+  {
+    "steps": 200000,
+    "mean_tracking_error_cm": 0.6322416664055338,
+    "rmse_cm": 1.2482633849731903,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.6322416664055338
+  },
+  {
+    "steps": 225000,
+    "mean_tracking_error_cm": 0.8534872791449086,
+    "rmse_cm": 1.3522615353625822,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.8534872791449086
+  },
+  {
+    "steps": 250000,
+    "mean_tracking_error_cm": 1.0512917695578692,
+    "rmse_cm": 1.492376599966316,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.0512917695578692
+  },
+  {
+    "steps": 275000,
+    "mean_tracking_error_cm": 0.6931020047350018,
+    "rmse_cm": 1.2956981252776978,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.6931020047350018
+  },
+  {
+    "steps": 300000,
+    "mean_tracking_error_cm": 1.0255129863777028,
+    "rmse_cm": 1.4833571987672418,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.0255129863777028
+  },
+  {
+    "steps": 325000,
+    "mean_tracking_error_cm": 0.7469044384829783,
+    "rmse_cm": 1.319386775848979,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.7469044384829782
+  },
+  {
+    "steps": 350000,
+    "mean_tracking_error_cm": 0.8610198308635161,
+    "rmse_cm": 1.3655994809617715,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.8610198308635159
+  },
+  {
+    "steps": 375000,
+    "mean_tracking_error_cm": 0.9285847680171997,
+    "rmse_cm": 1.3925632568580633,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.9285847680171997
+  },
+  {
+    "steps": 400000,
+    "mean_tracking_error_cm": 0.934392820148585,
+    "rmse_cm": 1.4216424244622368,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.934392820148585
+  },
+  {
+    "steps": 425000,
+    "mean_tracking_error_cm": 1.0857380277065414,
+    "rmse_cm": 1.533823018962053,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.0857380277065412
+  },
+  {
+    "steps": 450000,
+    "mean_tracking_error_cm": 1.0992833638488815,
+    "rmse_cm": 1.5145069348892957,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.0992833638488813
+  },
+  {
+    "steps": 475000,
+    "mean_tracking_error_cm": 1.118583950427706,
+    "rmse_cm": 1.5504182176201573,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.118583950427706
+  },
+  {
+    "steps": 500000,
+    "mean_tracking_error_cm": 1.212086631168033,
+    "rmse_cm": 1.618317085783716,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.2120866311680332
+  },
+  {
+    "steps": 525000,
+    "mean_tracking_error_cm": 0.7575903727895368,
+    "rmse_cm": 1.3170512196754591,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 0.7575903727895367
+  },
+  {
+    "steps": 550000,
+    "mean_tracking_error_cm": 1.115468282959724,
+    "rmse_cm": 1.5536473033840754,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.115468282959724
+  },
+  {
+    "steps": 575000,
+    "mean_tracking_error_cm": 1.259543687273868,
+    "rmse_cm": 1.660931663508008,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.259543687273868
+  },
+  {
+    "steps": 600000,
+    "mean_tracking_error_cm": 1.555526540323228,
+    "rmse_cm": 1.8884449967598367,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.5555265403232275
+  },
+  {
+    "steps": 625000,
+    "mean_tracking_error_cm": 1.7756516596161713,
+    "rmse_cm": 2.0954196369389173,
+    "step_success_3cm_pct": 98.0,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 1.775651659616171
+  },
+  {
+    "steps": 650000,
+    "mean_tracking_error_cm": 3.07740657959791,
+    "rmse_cm": 3.265774824872034,
+    "step_success_3cm_pct": 54.6,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 3.0774065795979104
+  },
+  {
+    "steps": 675000,
+    "mean_tracking_error_cm": 2.8969348042961163,
+    "rmse_cm": 3.1422726588180114,
+    "step_success_3cm_pct": 47.55,
+    "step_success_5cm_pct": 98.5,
+    "ep_mean_error_cm": 2.8969348042961167
+  },
+  {
+    "steps": 700000,
+    "mean_tracking_error_cm": 4.254951496574068,
+    "rmse_cm": 4.681164081978313,
+    "step_success_3cm_pct": 32.775,
+    "step_success_5cm_pct": 62.0,
+    "ep_mean_error_cm": 4.254951496574068
+  }
+]

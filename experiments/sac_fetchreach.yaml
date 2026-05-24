@@ -1,0 +1,45 @@
+# SAC training on standard FetchReachDense-v3 with residual RL
+# Task: Move gripper to random goal position (resampled each episode)
+# Architecture: u_total = u_pd + α * u_rl
+
+train:
+  seed: 0
+  total_timesteps: 200000
+  verbose: 1
+  tensorboard_log: ./sac_fetchreach_tensorboard/
+  model_save_path: sac_fetchreach_model
+  checkpoint_dir: ./checkpoints_fetchreach/
+  n_envs: 1
+  device: cpu  # Use CPU to avoid MPS float64 issues
+
+  sac:
+    policy: MultiInputPolicy
+    learning_rate: 0.0003
+    buffer_size: 1000000
+    batch_size: 256
+    gamma: 0.99
+    tau: 0.005
+    gradient_steps: 1
+    train_freq: 1
+    ent_coef: auto
+    target_entropy: -2.0
+
+env:
+  max_episode_steps: 50  # Standard FetchReach episode length
+
+# Residual RL parameters
+residual:
+  pd_kp: 40.0
+  pd_kd: 10.0
+  action_scale: 5.0
+  residual_alpha: 0.5
+  w_smooth: 0.01
+
+# Domain randomization to prevent overfitting
+# (Not yet implemented in current env - would need wrapper)
+domain_randomization:
+  enabled: false
+  obs_noise_std: 0.005  # Add Gaussian noise to observations
+  action_noise_std: 0.02  # Add Gaussian noise to actions
+  pd_kp_range: [35.0, 45.0]  # Randomize PD gains
+  pd_kd_range: [8.0, 12.0]
